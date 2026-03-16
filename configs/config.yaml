@@ -1,0 +1,22 @@
+app:
+  name: ecommerce-platform
+  mode: debug
+  port: 8080
+
+mysql:
+  dsn: "root:123456@tcp(localhost:3306)/ecommerce?charset=utf8mb4&parseTime=True&loc=Local"
+  max_open_conn: 100
+  max_idle_conn: 10
+
+redis:
+  addr: "localhost:6379"
+  password: ""
+  db: 0
+
+jwt:
+  secret: "your-secret-key-change-in-production"
+  expire_hour: 24
+
+kafka:
+  brokers:
+    - "localhost:9092"
