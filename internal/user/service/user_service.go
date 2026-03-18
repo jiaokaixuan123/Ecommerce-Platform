@@ -44,8 +44,8 @@ type UserService interface {
 // userService 结构体：
 type userService struct {
 	repo      repository.UserRepository
-	jwtSecret string
-	jwtExpire int
+	jwtSecret string	// jwt密钥
+	jwtExpire int		// 过期时间
 }
 
 // NewUserService：创建 UserService 实例
