@@ -1,5 +1,7 @@
 package domain
 
+// 用户实体类型
+
 import "time"
 
 type User struct {

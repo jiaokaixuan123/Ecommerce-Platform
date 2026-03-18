@@ -5,7 +5,7 @@ const (
 	// 通用
 	ErrSuccess      = 0
 	ErrServer       = 10000
-	ErrParam        = 10001
+	ErrParam        = 10001			// 错误参数
 	ErrUnauthorized = 10002
 	ErrForbidden    = 10003
 	ErrNotFound     = 10004

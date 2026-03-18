@@ -65,15 +65,17 @@ func main() {
 	// 注册路由
 	handler.RegisterRoutes(r, userHandler, cfg.JWT.Secret)
 
-	// 启动服务（优雅退出）
+	// 定义 HTTP 服务
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.App.Port),
 		Handler: r,
 	}
 
+	// 创建信号上下文：监听 SIGINT（Ctrl+C）、SIGTERM（kill 命令）
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+	defer stop() // 退出时停止监听信号
 
+	// 异步启动 HTTP 服务（不阻塞主线程）
 	go func() {
 		logger.Info("user service started", zap.Int("port", cfg.App.Port))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -81,9 +83,11 @@ func main() {
 		}
 	}()
 
+	// 阻塞等待信号（SIGINT/SIGTERM）
 	<-ctx.Done()
 	logger.Info("shutting down...")
 
+	// 优雅关闭服务（最多等待 5 秒）
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	_ = srv.Shutdown(shutdownCtx)

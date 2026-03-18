@@ -1,5 +1,8 @@
 package service
 
+// Service 层 / 业务逻辑
+// 实现用户模块的核心业务逻辑，封装 Repository 层操作，处理业务规则
+
 import (
 	"context"
 	"errors"
@@ -11,6 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// RegisterReq：注册请求参数结构体
 type RegisterReq struct {
 	Username string `json:"username" binding:"required,min=3,max=50"`
 	Password string `json:"password" binding:"required,min=6"`
@@ -18,28 +22,33 @@ type RegisterReq struct {
 	Phone    string `json:"phone" binding:"omitempty"`
 }
 
+// LoginReq：登录请求参数结构体
 type LoginReq struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
+// LoginResp：登录响应信息结构体
 type LoginResp struct {
 	Token string       `json:"token"`
 	User  *domain.User `json:"user"`
 }
 
+// UserService 接口：
 type UserService interface {
 	Register(ctx context.Context, req *RegisterReq) error
 	Login(ctx context.Context, req *LoginReq) (*LoginResp, error)
 	GetUserInfo(ctx context.Context, userID uint) (*domain.User, error)
 }
 
+// userService 结构体：
 type userService struct {
 	repo      repository.UserRepository
 	jwtSecret string
 	jwtExpire int
 }
 
+// NewUserService：创建 UserService 实例
 func NewUserService(repo repository.UserRepository, jwtSecret string, jwtExpire int) UserService {
 	return &userService{
 		repo:      repo,
@@ -48,6 +57,7 @@ func NewUserService(repo repository.UserRepository, jwtSecret string, jwtExpire 
 	}
 }
 
+// Register：接收 RegisterReq 的参数，封装注册逻辑
 func (s *userService) Register(ctx context.Context, req *RegisterReq) error {
 	// 检查用户名是否存在
 	if _, err := s.repo.GetByUsername(ctx, req.Username); err == nil {
@@ -71,6 +81,7 @@ func (s *userService) Register(ctx context.Context, req *RegisterReq) error {
 	return s.repo.Create(ctx, user)
 }
 
+// Login：登录
 func (s *userService) Login(ctx context.Context, req *LoginReq) (*LoginResp, error) {
 	user, err := s.repo.GetByUsername(ctx, req.Username)
 	if err != nil {
@@ -94,6 +105,7 @@ func (s *userService) Login(ctx context.Context, req *LoginReq) (*LoginResp, err
 	return &LoginResp{Token: token, User: user}, nil
 }
 
+// GetUserInfo：获取用户信息
 func (s *userService) GetUserInfo(ctx context.Context, userID uint) (*domain.User, error) {
 	user, err := s.repo.GetByID(ctx, userID)
 	if err != nil {
