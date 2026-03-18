@@ -4,6 +4,7 @@ package domain
 
 import "time"
 
+// domain层：服务的核心实体类型结构体
 type User struct {
 	ID        uint      `gorm:"primaryKey" json:"id"`
 	Username  string    `gorm:"uniqueIndex;size:50;not null" json:"username"`
@@ -17,6 +18,7 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// domain层：指定 GORM 映射的数据库表名为 users
 func (User) TableName() string {
 	return "users"
 }

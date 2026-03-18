@@ -83,7 +83,7 @@ func TestLogin_Success(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-	assert.NotEmpty(t, resp.Token)				// 验证 JWT 生成成功
+	assert.NotEmpty(t, resp.Token) // 验证 JWT 生成成功
 	assert.Equal(t, user.ID, resp.User.ID)
 }
 
@@ -141,4 +141,3 @@ func TestGetUserInfo_NotFound(t *testing.T) {
 
 	assert.EqualError(t, err, pkgerrors.Msg(pkgerrors.ErrUserNotFound))
 }
-
