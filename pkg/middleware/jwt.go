@@ -45,3 +45,19 @@ func GetUserID(c *gin.Context) uint {
 	uid, _ := id.(uint)
 	return uid
 }
+
+// RoleAuth 角色权限中间件，需在 JWT 中间件之后使用
+// 传入允许访问的角色列表，不在列表中的角色返回 403
+func RoleAuth(roles ...string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role, _ := c.Get(UserRoleKey)
+		for _, r := range roles {
+			if role == r {
+				c.Next()
+				return
+			}
+		}
+		response.Fail(c, errors.ErrForbidden, errors.Msg(errors.ErrForbidden))
+		c.Abort()
+	}
+}

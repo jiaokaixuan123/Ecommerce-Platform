@@ -75,6 +75,7 @@ func (s *userService) Register(ctx context.Context, req *RegisterReq) error {
 		Password: string(hashedPassword),
 		Email:    req.Email,
 		Phone:    req.Phone,
+		Role:     "user",
 		Status:   1,
 	}
 
@@ -97,7 +98,7 @@ func (s *userService) Login(ctx context.Context, req *LoginReq) (*LoginResp, err
 	}
 
 	// 生成 token
-	token, err := utils.GenerateToken(user.ID, "user", s.jwtSecret, s.jwtExpire)
+	token, err := utils.GenerateToken(user.ID, user.Role, s.jwtSecret, s.jwtExpire)
 	if err != nil {
 		return nil, err
 	}
