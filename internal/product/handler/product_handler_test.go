@@ -44,6 +44,7 @@ func newRouter(svc *mocks.MockProductService, merchantID uint) *gin.Engine {
 	return r
 }
 
+// postJSON：发送 POST JSON 请求
 func postJSON(r *gin.Engine, path string, body any) *httptest.ResponseRecorder {
 	b, _ := json.Marshal(body)
 	req := httptest.NewRequest(http.MethodPost, path, bytes.NewBuffer(b))
@@ -53,6 +54,7 @@ func postJSON(r *gin.Engine, path string, body any) *httptest.ResponseRecorder {
 	return w
 }
 
+// putJSON：发送 PUT JSON 请求
 func putJSON(r *gin.Engine, path string, body any) *httptest.ResponseRecorder {
 	b, _ := json.Marshal(body)
 	req := httptest.NewRequest(http.MethodPut, path, bytes.NewBuffer(b))
@@ -62,6 +64,7 @@ func putJSON(r *gin.Engine, path string, body any) *httptest.ResponseRecorder {
 	return w
 }
 
+// getReq 发送GET请求
 func getReq(r *gin.Engine, path string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	w := httptest.NewRecorder()
@@ -69,6 +72,7 @@ func getReq(r *gin.Engine, path string) *httptest.ResponseRecorder {
 	return w
 }
 
+// deleteReq 发送DELETE请求
 func deleteReq(r *gin.Engine, path string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodDelete, path, nil)
 	w := httptest.NewRecorder()
@@ -83,22 +87,23 @@ func TestHandler_CreateProduct_Success(t *testing.T) {
 	svc := new(mocks.MockProductService)
 	svc.On("CreateProduct", mock.Anything, mock.Anything).Return(nil)
 
-	// TODO:
-	// 1. 调用 postJSON，传入合法的商品数据（name, price, stock, category_id）
-	// 2. 断言 HTTP 状态码 200
-	// 3. 断言响应体包含 `"code":0`
+	w := postJSON(newRouter(svc, 1), "/api/v1/products", map[string]any{
+		"name": "手机", "price": 900, "stock": 10, "category_id": 1,
+	})
 
-	_ = assert.New(t) // 占位，实现时删除
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"code":0`)
 }
 
 // TestHandler_CreateProduct_InvalidParam 测试缺少必填字段时返回参数错误
 func TestHandler_CreateProduct_InvalidParam(t *testing.T) {
 	svc := new(mocks.MockProductService)
 
-	// TODO:
-	// 1. 调用 postJSON，传入缺少 name 或 price 的请求体
-	// 2. 断言响应体包含 `"code":10001`
-	// 3. svc.AssertNotCalled(t, "CreateProduct")
+	w := postJSON(newRouter(svc, 1), "/api/v1/products", map[string]any{
+		"name": "电脑", "stock": 10,
+	})
+	assert.Contains(t, w.Body.String(), `"code":10001`)
+	svc.AssertNotCalled(t, "CreateProduct")
 }
 
 // TestHandler_CreateProduct_ServiceError 测试 service 返回错误时响应正确
@@ -106,9 +111,11 @@ func TestHandler_CreateProduct_ServiceError(t *testing.T) {
 	svc := new(mocks.MockProductService)
 	svc.On("CreateProduct", mock.Anything, mock.Anything).Return(errors.New("db error"))
 
-	// TODO:
-	// 1. 调用 postJSON，传入合法请求体
-	// 2. 断言响应体包含 `"code":10000`
+	w := postJSON(newRouter(svc, 1), "/api/v1/products", map[string]any{
+		"name": "手机", "price": 900, "stock": 10, "category_id": 1,
+	})
+
+	assert.Contains(t, w.Body.String(), `"code":1000`)
 }
 
 // ---- GetProduct ----
@@ -119,10 +126,10 @@ func TestHandler_GetProduct_Success(t *testing.T) {
 	product := &domain.Product{ID: 1, Name: "手机", Price: 299900}
 	svc.On("GetProduct", mock.Anything, uint(1)).Return(product, nil)
 
-	// TODO:
-	// 1. 调用 getReq(r, "/api/v1/products/1")
-	// 2. 断言状态码 200
-	// 3. 断言响应体包含 "手机"
+	w := getReq(newRouter(svc, 0), "/api/v1/products/1")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "手机")
 }
 
 // TestHandler_GetProduct_NotFound 测试商品不存在时返回正确错误码
@@ -130,9 +137,8 @@ func TestHandler_GetProduct_NotFound(t *testing.T) {
 	svc := new(mocks.MockProductService)
 	svc.On("GetProduct", mock.Anything, uint(99)).Return(nil, errors.New(pkgerrors.Msg(pkgerrors.ErrProductNotFound)))
 
-	// TODO:
-	// 1. 调用 getReq(r, "/api/v1/products/99")
-	// 2. 断言响应体包含 `"code":12001`
+	w := getReq(newRouter(svc, 0), "/api/v1/products/99")
+	assert.Contains(t, w.Body.String(), `"code":12001`)
 }
 
 // ---- ListProducts ----
@@ -146,10 +152,9 @@ func TestHandler_ListProducts_Success(t *testing.T) {
 	}
 	svc.On("ListProducts", mock.Anything, mock.Anything).Return(resp, nil)
 
-	// TODO:
-	// 1. 调用 getReq(r, "/api/v1/products")
-	// 2. 断言状态码 200
-	// 3. 断言响应体包含 `"total":2`
+	w := getReq(newRouter(svc, 0), "/api/v1/products")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), `"total":2`)
 }
 
 // ---- UpdateProduct ----
@@ -159,9 +164,10 @@ func TestHandler_UpdateProduct_Success(t *testing.T) {
 	svc := new(mocks.MockProductService)
 	svc.On("UpdateProduct", mock.Anything, uint(1), mock.Anything).Return(nil)
 
-	// TODO:
-	// 1. 调用 putJSON(r, "/api/v1/products/1", map 包含 name 或 price)
-	// 2. 断言响应体包含 `"code":0`
+	w := putJSON(newRouter(svc, 1), "/api/v1/products/1", map[string]any{
+		"name": "电视", "price": 2500,
+	})
+	assert.Contains(t, w.Body.String(), `"code":0`)
 }
 
 // TestHandler_UpdateProduct_NotFound 测试更新不存在的商品
@@ -170,9 +176,10 @@ func TestHandler_UpdateProduct_NotFound(t *testing.T) {
 	svc.On("UpdateProduct", mock.Anything, uint(99), mock.Anything).
 		Return(errors.New(pkgerrors.Msg(pkgerrors.ErrProductNotFound)))
 
-	// TODO:
-	// 1. 调用 putJSON(r, "/api/v1/products/99", ...)
-	// 2. 断言响应体包含 `"code":10000`
+	w := putJSON(newRouter(svc, 1), "/api/v1/products/99", map[string]any{
+		"name": "电视", "price": 2500,
+	})
+	assert.Contains(t, w.Body.String(), `"code":10000`)
 }
 
 // ---- DeleteProduct ----
@@ -182,9 +189,8 @@ func TestHandler_DeleteProduct_Success(t *testing.T) {
 	svc := new(mocks.MockProductService)
 	svc.On("DeleteProduct", mock.Anything, uint(1)).Return(nil)
 
-	// TODO:
-	// 1. 调用 deleteReq(r, "/api/v1/products/1")
-	// 2. 断言响应体包含 `"code":0`
+	w := deleteReq(newRouter(svc, 1), "/api/v1/products/1")
+	assert.Contains(t, w.Body.String(), `"code":0`)
 }
 
 // TestHandler_DeleteProduct_NotFound 测试删除不存在的商品
@@ -193,7 +199,6 @@ func TestHandler_DeleteProduct_NotFound(t *testing.T) {
 	svc.On("DeleteProduct", mock.Anything, uint(99)).
 		Return(errors.New(pkgerrors.Msg(pkgerrors.ErrProductNotFound)))
 
-	// TODO:
-	// 1. 调用 deleteReq(r, "/api/v1/products/99")
-	// 2. 断言响应体包含 `"code":10000`
+	w := deleteReq(newRouter(svc, 1), "/api/v1/products/99")
+	assert.Contains(t, w.Body.String(), `"code":10000`)
 }
