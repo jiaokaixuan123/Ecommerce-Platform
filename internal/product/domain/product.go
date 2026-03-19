@@ -15,12 +15,13 @@ func (Category) TableName() string { return "categories" }
 // Product 商品实体
 type Product struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
+	MerchantID  uint      `gorm:"not null;index" json:"merchant_id"`  // 所属商家用户ID
 	Name        string    `gorm:"size:100;not null" json:"name"`
 	Description string    `gorm:"type:text" json:"description"`
-	Price       float64   `gorm:"not null" json:"price"`           // 单价（元）
-	Stock       int       `gorm:"not null;default:0" json:"stock"` // 库存数量
+	Price       int64     `gorm:"not null" json:"price"`              // 单价（分），避免浮点精度问题
+	Stock       int       `gorm:"not null;default:0" json:"stock"`    // 库存数量
 	CategoryID  uint      `gorm:"not null" json:"category_id"`
-	Status      int8      `gorm:"default:1" json:"status"` 		   // 1:上架 0:下架
+	Status      int8      `gorm:"default:1" json:"status"`            // 1:上架 0:下架
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 

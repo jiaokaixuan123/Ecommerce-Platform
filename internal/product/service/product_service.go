@@ -14,20 +14,21 @@ import (
 
 // CreateProductReq 创建商品请求
 type CreateProductReq struct {
-	Name        string  `json:"name" binding:"required,max=100"`
-	Description string  `json:"description"`
-	Price       float64 `json:"price" binding:"required,gt=0"`
-	Stock       int     `json:"stock" binding:"required,gte=0"`
-	CategoryID  uint    `json:"category_id" binding:"required"`
+	MerchantID  uint   `json:"-"`                                     // 从 JWT 上下文注入，不由客户端传入
+	Name        string `json:"name" binding:"required,max=100"`
+	Description string `json:"description"`
+	Price       int64  `json:"price" binding:"required,gt=0"`         // 单位：分
+	Stock       int    `json:"stock" binding:"required,gte=0"`
+	CategoryID  uint   `json:"category_id" binding:"required"`
 }
 
 // UpdateProductReq 更新商品请求（字段全部可选）
 type UpdateProductReq struct {
-	Name        *string  `json:"name" binding:"omitempty,max=100"`
-	Description *string  `json:"description"`
-	Price       *float64 `json:"price" binding:"omitempty,gt=0"`
-	Stock       *int     `json:"stock" binding:"omitempty,gte=0"`
-	Status      *int8    `json:"status" binding:"omitempty,oneof=0 1"`
+	Name        *string `json:"name" binding:"omitempty,max=100"`
+	Description *string `json:"description"`
+	Price       *int64  `json:"price" binding:"omitempty,gt=0"`        // 单位：分
+	Stock       *int    `json:"stock" binding:"omitempty,gte=0"`
+	Status      *int8   `json:"status" binding:"omitempty,oneof=0 1"`
 }
 
 // ListProductReq 分页查询请求
@@ -80,12 +81,13 @@ func NewProductService(repo repository.ProductRepository) ProductService {
 func (s *productService) CreateProduct(ctx context.Context, req *CreateProductReq) error {
 
 	product := &domain.Product{
+		MerchantID:  req.MerchantID,
 		Name:        req.Name,
 		Description: req.Description,
 		Price:       req.Price,
 		Stock:       req.Stock,
 		CategoryID:  req.CategoryID,
-		Status:      1, // 默认上架
+		Status:      1,
 	}
 
 	return s.repo.Create(ctx, product)
@@ -175,11 +177,5 @@ func (s *productService) DeductStock(ctx context.Context, id uint, quantity int)
 	if quantity <= 0 {
 		return errors.New(pkgerrors.Msg(pkgerrors.ErrParam))
 	}
-	err := s.repo.DeductStock(ctx, id, quantity)
-	if err != nil {
-		if errors.Is(err, errors.New(pkgerrors.Msg(pkgerrors.ErrProductOutOfStock))) {
-			return err
-		}
-	}
-	return nil
+	return s.repo.DeductStock(ctx, id, quantity)
 }

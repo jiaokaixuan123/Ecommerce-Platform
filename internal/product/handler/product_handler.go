@@ -5,9 +5,9 @@ import (
 
 	"github.com/ecommerce-platform/internal/product/service"
 	pkgerrors "github.com/ecommerce-platform/pkg/errors"
+	"github.com/ecommerce-platform/pkg/middleware"
 	"github.com/ecommerce-platform/pkg/response"
 	"github.com/gin-gonic/gin"
-
 )
 
 type ProductHandler struct {
@@ -21,12 +21,14 @@ func NewProductHandler(svc service.ProductService) *ProductHandler {
 // 实现 CreateProduct handler
 // POST /api/v1/products
 func (h *ProductHandler) CreateProduct(c *gin.Context) {
-	// 解析注册请求参数
 	var req service.CreateProductReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, pkgerrors.ErrParam, err.Error())
 		return
 	}
+
+	// 从 JWT context 注入商家ID，不信任客户端传入
+	req.MerchantID = middleware.GetUserID(c)
 
 	if err := h.productService.CreateProduct(c.Request.Context(), &req); err != nil {
 		response.Fail(c, pkgerrors.ErrServer, err.Error())
