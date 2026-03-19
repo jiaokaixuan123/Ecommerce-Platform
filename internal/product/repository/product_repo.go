@@ -12,7 +12,7 @@ import (
 // ProductRepository 定义商品数据访问接口
 type ProductRepository interface {
 	// 创建商品
-	Create(ctx context.Context, product *domain.Product) error 
+	Create(ctx context.Context, product *domain.Product) error
 
 	// 根据 ID 查询商品
 	GetByID(ctx context.Context, id uint) (*domain.Product, error)
@@ -51,7 +51,7 @@ func (r *productRepository) Create(ctx context.Context, product *domain.Product)
 func (r *productRepository) GetByID(ctx context.Context, id uint) (*domain.Product, error) {
 	var product domain.Product
 	// First 方法：查询不到会返回 gorm.ErrRecordNotFound
-	err := r.db.WithContext(ctx).First(&product,id).Error
+	err := r.db.WithContext(ctx).First(&product, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (r *productRepository) GetByID(ctx context.Context, id uint) (*domain.Produ
 func (r *productRepository) List(ctx context.Context, offset, limit int, categoryID uint) ([]*domain.Product, int64, error) {
 	var (
 		products []*domain.Product
-		total   int64
+		total    int64
 	)
 	// 构建查询条件
 	query := r.db.WithContext(ctx).Model(&domain.Product{})
@@ -90,14 +90,14 @@ func (r *productRepository) Update(ctx context.Context, product *domain.Product)
 
 // 实现 Delete
 func (r *productRepository) Delete(ctx context.Context, id uint) error {
-	return r.db.WithContext(ctx).Delete(&domain.Product{},id).Error
+	return r.db.WithContext(ctx).Delete(&domain.Product{}, id).Error
 }
 
 // 实现 DeductStock（原子扣减，防止超卖）
 func (r *productRepository) DeductStock(ctx context.Context, id uint, quantity int) error {
 	result := r.db.WithContext(ctx).Model(&domain.Product{}).
-			Where("id = ? AND stock >= ?", id, quantity).
-			Update("stock", gorm.Expr("stock - ?", quantity))
+		Where("id = ? AND stock >= ?", id, quantity).
+		Update("stock", gorm.Expr("stock - ?", quantity))
 
 	if result.Error != nil {
 		return result.Error
