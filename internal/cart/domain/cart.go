@@ -35,3 +35,8 @@ type CartItem struct {
 	ProductPrice int64  `gorm:"not null" json:"product_price"` // 加购时的商品单价
 	ProductImage string `json:"product_image"`                 // 加购时的商品主图
 }
+
+// BelongsToCart 判断购物车项是否属于指定购物车（纯数据校验，无 IO）
+func (item *CartItem) BelongsToCart(cartID uint) bool {
+	return item.CartID == cartID
+}

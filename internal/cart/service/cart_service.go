@@ -106,7 +106,7 @@ func (s *cartService) AddCartItem(ctx context.Context, req *AddCartItemReq) erro
 	}
 
 	// 1. 获取或创建用户购物车
-	cart, err := s.cartRepo.GetOrCreateByUserID(ctx, req.UserID)
+	cart, err := s.getUserCart(ctx, req.UserID)
 	if err != nil {
 		return err
 	}
@@ -127,8 +127,7 @@ func (s *cartService) AddCartItem(ctx context.Context, req *AddCartItemReq) erro
 
 // GetUserCart 获取购物车，组装 CartVO 并计算派生数据
 func (s *cartService) GetUserCart(ctx context.Context, userID uint) (*CartVO, error) {
-	// 1. 获取或创建购物车
-	cart, err := s.cartRepo.GetOrCreateByUserID(ctx, userID)
+	cart, err := s.getUserCart(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -162,47 +161,17 @@ func (s *cartService) UpdateCartItemQuantity(ctx context.Context, req *UpdateCar
 	if req.Quantity <= 0 {
 		return errors.New(pkgerrors.Msg(pkgerrors.ErrParam))
 	}
-
-	// 验证 item 存在且属于当前用户
-	item, err := s.cartItemRepo.GetItemByID(ctx, req.ItemID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New(pkgerrors.Msg(pkgerrors.ErrNotFound))
-		}
+	if _, err := s.verifyItemOwnership(ctx, req.ItemID, req.UserID); err != nil {
 		return err
 	}
-
-	// 验证归属：通过 CartID 反查购物车确认所有者
-	cart, err := s.cartRepo.GetOrCreateByUserID(ctx, req.UserID)
-	if err != nil {
-		return err
-	}
-	if item.CartID != cart.ID {
-		return errors.New(pkgerrors.Msg(pkgerrors.ErrForbidden))
-	}
-
 	return s.cartItemRepo.UpdateQuantity(ctx, req.ItemID, req.Quantity)
 }
 
 // UpdateCartItemSelected 修改购物车项选中状态
 func (s *cartService) UpdateCartItemSelected(ctx context.Context, req *UpdateCartItemSelectedReq) error {
-	// 验证 item 存在且归属当前用户
-	item, err := s.cartItemRepo.GetItemByID(ctx, req.ItemID)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New(pkgerrors.Msg(pkgerrors.ErrNotFound))
-		}
+	if _, err := s.verifyItemOwnership(ctx, req.ItemID, req.UserID); err != nil {
 		return err
 	}
-
-	cart, err := s.cartRepo.GetOrCreateByUserID(ctx, req.UserID)
-	if err != nil {
-		return err
-	}
-	if item.CartID != cart.ID {
-		return errors.New(pkgerrors.Msg(pkgerrors.ErrForbidden))
-	}
-
 	return s.cartItemRepo.UpdateSelected(ctx, req.ItemID, req.Selected)
 }
 
@@ -210,27 +179,18 @@ func (s *cartService) UpdateCartItemSelected(ctx context.Context, req *UpdateCar
 //   - 传 ItemID > 0：按 item 删除单条
 //   - 传 ProductID > 0：删除该商品的所有规格
 func (s *cartService) DeleteCartItem(ctx context.Context, req *DeleteCartItemReq) error {
-	cart, err := s.cartRepo.GetOrCreateByUserID(ctx, req.UserID)
-	if err != nil {
-		return err
-	}
-
 	if req.ItemID > 0 {
-		// 验证归属
-		item, err := s.cartItemRepo.GetItemByID(ctx, req.ItemID)
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errors.New(pkgerrors.Msg(pkgerrors.ErrNotFound))
-			}
+		if _, err := s.verifyItemOwnership(ctx, req.ItemID, req.UserID); err != nil {
 			return err
-		}
-		if item.CartID != cart.ID {
-			return errors.New(pkgerrors.Msg(pkgerrors.ErrForbidden))
 		}
 		return s.cartItemRepo.Delete(ctx, req.ItemID)
 	}
 
 	if req.ProductID > 0 {
+		cart, err := s.getUserCart(ctx, req.UserID)
+		if err != nil {
+			return err
+		}
 		return s.cartItemRepo.DeleteByCartIDAndProductID(ctx, cart.ID, req.ProductID)
 	}
 
@@ -239,7 +199,7 @@ func (s *cartService) DeleteCartItem(ctx context.Context, req *DeleteCartItemReq
 
 // ClearCart 清空购物车（下单成功后调用）
 func (s *cartService) ClearCart(ctx context.Context, userID uint) error {
-	cart, err := s.cartRepo.GetOrCreateByUserID(ctx, userID)
+	cart, err := s.getUserCart(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -247,6 +207,35 @@ func (s *cartService) ClearCart(ctx context.Context, userID uint) error {
 }
 
 // ---- 私有辅助方法 ----
+
+// getUserCart 获取用户购物车，统一封装错误
+func (s *cartService) getUserCart(ctx context.Context, userID uint) (*domain.Cart, error) {
+	cart, err := s.cartRepo.GetOrCreateByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return cart, nil
+}
+
+// verifyItemOwnership 验证 item 存在且属于当前用户的购物车
+// 返回 item 本身供调用方直接使用，避免二次查询
+func (s *cartService) verifyItemOwnership(ctx context.Context, itemID, userID uint) (*domain.CartItem, error) {
+	item, err := s.cartItemRepo.GetItemByID(ctx, itemID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New(pkgerrors.Msg(pkgerrors.ErrNotFound))
+		}
+		return nil, err
+	}
+	cart, err := s.getUserCart(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if !item.BelongsToCart(cart.ID) {
+		return nil, errors.New(pkgerrors.Msg(pkgerrors.ErrForbidden))
+	}
+	return item, nil
+}
 
 // calculateDerivedData 计算购物车派生数据
 func (s *cartService) calculateDerivedData(items []*domain.CartItem) (totalPrice int64, selectedCount int, selectedAmount int64) {
