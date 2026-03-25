@@ -93,7 +93,6 @@ func (h *ProductHandler) UpdateProduct(c *gin.Context) {
 // 实现 DeleteProduct handler
 // DELETE /api/v1/products/:id
 func (h *ProductHandler) DeleteProduct(c *gin.Context) {
-	// 提示：解析 id，调用 h.productService.DeleteProduct
 	productID, ok := parseID(c)
 	if !ok {
 		return

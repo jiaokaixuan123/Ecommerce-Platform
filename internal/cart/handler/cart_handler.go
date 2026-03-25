@@ -48,6 +48,10 @@ func (h *CartHandler) AddCartItem(c *gin.Context) {
 
 func (h *CartHandler) UpdateCartItemQuantity(c *gin.Context) {
 	var req service.UpdateCartItemQuantityReq
+
+	itemID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	req.ItemID = uint(itemID)
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, pkgerrors.ErrParam, err.Error())
 		return
@@ -64,6 +68,9 @@ func (h *CartHandler) UpdateCartItemQuantity(c *gin.Context) {
 func (h *CartHandler) UpdateCartItemSelected(c *gin.Context) {
 	var req service.UpdateCartItemSelectedReq
 
+	itemID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+	req.ItemID = uint(itemID)
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Fail(c, pkgerrors.ErrParam, err.Error())
 		return
@@ -78,8 +85,8 @@ func (h *CartHandler) UpdateCartItemSelected(c *gin.Context) {
 }
 
 func (h *CartHandler) DeleteCartItem(c *gin.Context) {
-	itemID, _ := strconv.ParseUint(c.Param("id"), 10, 32)
-    productID, _ := strconv.ParseUint(c.Query("product_id"), 10, 32)
+	itemID, _ := strconv.ParseUint(c.Param("id"), 10, 64)
+    productID, _ := strconv.ParseUint(c.Query("product_id"), 10, 64)
 
     req := &service.DeleteCartItemReq{
         UserID:    middleware.GetUserID(c),
