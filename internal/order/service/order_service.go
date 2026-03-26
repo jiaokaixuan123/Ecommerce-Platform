@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/ecommerce-platform/internal/order/domain"
 	"github.com/ecommerce-platform/internal/order/repository"
+	pkgerrors "github.com/ecommerce-platform/pkg/errors"
 )
 
 // ---- 请求/响应结构体 ----
@@ -74,13 +76,7 @@ func NewOrderService(orderRepo repository.OrderRepository, itemRepo repository.O
 	}
 }
 
-// ---- 方法实现（TODO：由你来完成）----
-
-// CreateOrder TODO Step 1
-// 提示：
-//   - 用 fmt.Sprintf("ORD%s%06d", time.Now().Format("20060102150405"), userID) 生成订单号
-//   - 遍历 req.Items 计算 TotalAmount 和构建 OrderItem 列表
-//   - 调用 s.orderRepo.Create(ctx, order, items)
+// 实现
 func (s *orderService) CreateOrder(ctx context.Context, req *CreateOrderReq) (*domain.Order, error) {
 	var totalAmount int64
 	var orderItems []*domain.OrderItem
@@ -88,7 +84,7 @@ func (s *orderService) CreateOrder(ctx context.Context, req *CreateOrderReq) (*d
 	orderNo := fmt.Sprintf("ORD%s%06d", time.Now().Format("20060102150405"), req.UserID)
 
 	for _, item := range req.Items {
-		totalAmount += int64(item.Price)
+		totalAmount += int64(item.Price) * int64(item.Quantity)
 		orderItems = append(orderItems, &domain.OrderItem{
 			ProductID:    item.ProductID,
 			MerchantID:   item.MerchantID,
@@ -96,52 +92,72 @@ func (s *orderService) CreateOrder(ctx context.Context, req *CreateOrderReq) (*d
 			ProductImage: item.ProductImage,
 			Price:        item.Price,
 			Quantity:     item.Quantity,
+			Subtotal: 	  item.Price * int64(item.Quantity),
 		})
 	}
 	order := &domain.Order{
 		UserID:      req.UserID,
 		OrderNo:     orderNo,
 		TotalAmount: int64(totalAmount),
-		Status:      domain.OrderStatus(domain.OrderStatusPending),
+		Status:      domain.OrderStatusPending,
 		Remark:      "",
 	}
 
 	return order, s.orderRepo.Create(ctx, order, orderItems)
 }
 
-// GetOrderDetail TODO Step 2
-// 提示：
-//   - GetByID 查询订单，验证 order.UserID == userID（防止越权）
-//   - ListByOrderID 查询商品项
-//   - 组装 OrderDetailResp 返回
 func (s *orderService) GetOrderDetail(ctx context.Context, userID, orderID uint) (*OrderDetailResp, error) {
-	// TODO
-	panic("not implemented")
+	order, err := s.orderRepo.GetByID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	if order.UserID != userID {
+		return nil, errors.New(pkgerrors.Msg(pkgerrors.ErrForbidden))
+	}
+
+	items, err := s.itemRepo.ListByOrderID(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+	return &OrderDetailResp{
+		Order: order,
+		Items: items,
+	}, nil
 }
 
-// ListUserOrders TODO Step 3
-// 提示：
-//   - page 从 1 开始，offset = (page-1) * pageSize
-//   - pageSize 默认 10，最大 50
 func (s *orderService) ListUserOrders(ctx context.Context, userID uint, page, pageSize int) (*ListOrderResp, error) {
-	// TODO
-	panic("not implemented")
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 10
+	}
+	if pageSize > 50 {
+		pageSize = 50
+	}
+
+	offset := (page - 1) * pageSize
+	orders, total, err := s.orderRepo.ListByUserID(ctx, userID, offset, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	return &ListOrderResp{
+		Orders: orders,
+		Total: total,
+	}, nil
 }
 
-// CancelOrder TODO Step 4
-// 提示：
-//   - 先 GetByID，验证 UserID 一致
-//   - 调用 UpdateStatus(ctx, id, OrderStatusPending, OrderStatusCancelled)
-//   - UpdateStatus 返回错误时说明状态已不是待支付，返回 ErrOrderStatusInvalid
 func (s *orderService) CancelOrder(ctx context.Context, userID, orderID uint) error {
-	// TODO
-	panic("not implemented")
+	order, err := s.orderRepo.GetByID(ctx, orderID)
+	if err != nil {
+		return err
+	}
+	if order.UserID != userID {
+		return errors.New(pkgerrors.Msg(pkgerrors.ErrForbidden))
+	}
+	return s.orderRepo.UpdateStatus(ctx, orderID, domain.OrderStatusPending, domain.OrderStatusCancelled)
 }
 
-// ConfirmOrder TODO Step 5（支付服务回调用）
-// 提示：
-//   - 调用 UpdateStatus(ctx, id, OrderStatusPending, OrderStatusPaid)
 func (s *orderService) ConfirmOrder(ctx context.Context, orderID uint) error {
-	// TODO
-	panic("not implemented")
+	return s.orderRepo.UpdateStatus(ctx, orderID, domain.OrderStatusPending, domain.OrderStatusPaid)
 }

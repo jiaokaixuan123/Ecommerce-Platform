@@ -73,7 +73,7 @@ func (r *orderRepository) GetByID(ctx context.Context, id uint) (*domain.Order, 
 
 func (r *orderRepository) GetByOrderNo(ctx context.Context, orderNo string) (*domain.Order, error) {
 	var order domain.Order
-	err := r.db.WithContext(ctx).Where("order_no = ?", orderNo).First(&order, orderNo).Error
+	err := r.db.WithContext(ctx).Where("order_no = ?", orderNo).First(&order).Error
 	if err != nil {
 		return nil, err
 	}
