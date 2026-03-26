@@ -9,6 +9,7 @@ import (
 	"github.com/ecommerce-platform/internal/order/domain"
 	"github.com/ecommerce-platform/internal/order/repository"
 	pkgerrors "github.com/ecommerce-platform/pkg/errors"
+	"gorm.io/gorm"
 )
 
 // ---- 请求/响应结构体 ----
@@ -78,6 +79,10 @@ func NewOrderService(orderRepo repository.OrderRepository, itemRepo repository.O
 
 // 实现
 func (s *orderService) CreateOrder(ctx context.Context, req *CreateOrderReq) (*domain.Order, error) {
+	if len(req.Items) == 0 {
+		return nil, errors.New(pkgerrors.Msg(pkgerrors.ErrParam))
+	}
+
 	var totalAmount int64
 	var orderItems []*domain.OrderItem
 
@@ -109,6 +114,9 @@ func (s *orderService) CreateOrder(ctx context.Context, req *CreateOrderReq) (*d
 func (s *orderService) GetOrderDetail(ctx context.Context, userID, orderID uint) (*OrderDetailResp, error) {
 	order, err := s.orderRepo.GetByID(ctx, orderID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, errors.New(pkgerrors.Msg(pkgerrors.ErrOrderNotFound))
+		}
 		return nil, err
 	}
 	if order.UserID != userID {
@@ -150,10 +158,16 @@ func (s *orderService) ListUserOrders(ctx context.Context, userID uint, page, pa
 func (s *orderService) CancelOrder(ctx context.Context, userID, orderID uint) error {
 	order, err := s.orderRepo.GetByID(ctx, orderID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return errors.New(pkgerrors.Msg(pkgerrors.ErrOrderNotFound))
+		}
 		return err
 	}
 	if order.UserID != userID {
 		return errors.New(pkgerrors.Msg(pkgerrors.ErrForbidden))
+	}
+	if order.Status != domain.OrderStatusPending {
+		return errors.New(pkgerrors.Msg(pkgerrors.ErrOrderStatusInvalid))
 	}
 	return s.orderRepo.UpdateStatus(ctx, orderID, domain.OrderStatusPending, domain.OrderStatusCancelled)
 }

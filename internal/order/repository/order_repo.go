@@ -52,14 +52,17 @@ func NewOrderItemRepository(db *gorm.DB) OrderItemRepository {
 
 func (r *orderRepository) Create(ctx context.Context, order *domain.Order, items []*domain.OrderItem) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-    if err := tx.Create(order).Error; err != nil {
-        return err
-    }
-    for _, item := range items {
-        item.OrderID = order.ID
-    }
-    return tx.Create(&items).Error
-})
+		if err := tx.Create(order).Error; err != nil {
+			return err
+		}
+		if len(items) == 0 {
+			return nil
+		}
+		for _, item := range items {
+			item.OrderID = order.ID
+		}
+		return tx.Create(&items).Error
+	})
 }
 
 func (r *orderRepository) GetByID(ctx context.Context, id uint) (*domain.Order, error) {
