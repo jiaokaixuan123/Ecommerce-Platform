@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 
 	"github.com/ecommerce-platform/internal/seckill/domain"
+	pkgerrors "github.com/ecommerce-platform/pkg/errors"
 	"gorm.io/gorm"
 )
 
@@ -28,17 +30,36 @@ func NewSeckillRepository(db *gorm.DB) SeckillRepository {
 }
 
 func (r *seckillRepository) GetByID(ctx context.Context, id uint) (*domain.SeckillProduct, error) {
-	// TODO: 实现查询逻辑
-	panic("not implemented")
+	var seckillProduct domain.SeckillProduct
+	err := r.db.WithContext(ctx).Where("id = ?", id).First(&seckillProduct).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, pkgerrors.New(pkgerrors.ErrProductNotFound)
+		}
+		return nil, err
+	}
+	return &seckillProduct, nil
 }
 
 func (r *seckillRepository) Create(ctx context.Context, sp *domain.SeckillProduct) error {
-	// TODO: 实现创建逻辑
-	panic("not implemented")
+	return r.db.WithContext(ctx).Create(sp).Error
 }
 
 func (r *seckillRepository) DecrStock(ctx context.Context, id uint, quantity int) error {
-	// TODO: CAS 扣减 DB 库存，RowsAffected==0 时返回错误
-	// UPDATE seckill_products SET remain_stock = remain_stock - ? WHERE id = ? AND remain_stock >= ?
-	panic("not implemented")
+	// CAS 核心：WHERE 条件保证原子性，不会超卖
+	result := r.db.WithContext(ctx).
+		Model(&domain.SeckillProduct{}).
+		Where("id = ? AND remain_stock >= ?", id, quantity).
+		UpdateColumn("remain_stock", gorm.Expr("remain_stock - ?", quantity))
+
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// 没有行受影响 → 库存不足/商品不存在 → 扣减失败
+	if result.RowsAffected == 0 {
+		return pkgerrors.New(pkgerrors.ErrProductOutOfStock)
+	}
+
+	return nil
 }

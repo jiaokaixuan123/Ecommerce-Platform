@@ -33,7 +33,7 @@ func (h *SeckillHandler) DoSeckill(c *gin.Context) {
 	}
 
 	if err := h.seckillService.DoSeckill(c.Request.Context(), req); err != nil {
-		response.Fail(c, pkgerrors.ErrSeckillOver, err.Error())
+		response.Fail(c, pkgerrors.CodeOf(err), pkgerrors.MessageOf(err))
 		return
 	}
 
@@ -51,7 +51,7 @@ func (h *SeckillHandler) GetSeckillProduct(c *gin.Context) {
 
 	sp, err := h.seckillService.GetSeckillProduct(c.Request.Context(), uint(id))
 	if err != nil {
-		response.Fail(c, pkgerrors.ErrNotFound, err.Error())
+		response.Fail(c, pkgerrors.CodeOf(err), pkgerrors.MessageOf(err))
 		return
 	}
 
@@ -69,7 +69,7 @@ func (h *SeckillHandler) CreateSeckillProduct(c *gin.Context) {
 
 	sp, err := h.seckillService.CreateSeckillProduct(c.Request.Context(), &req)
 	if err != nil {
-		response.Fail(c, pkgerrors.ErrServer, err.Error())
+		response.Fail(c, pkgerrors.CodeOf(err), pkgerrors.MessageOf(err))
 		return
 	}
 
@@ -86,7 +86,7 @@ func (h *SeckillHandler) PrewarmStock(c *gin.Context) {
 	}
 
 	if err := h.seckillService.PrewarmStock(c.Request.Context(), uint(id)); err != nil {
-		response.Fail(c, pkgerrors.ErrServer, err.Error())
+		response.Fail(c, pkgerrors.CodeOf(err), pkgerrors.MessageOf(err))
 		return
 	}
 

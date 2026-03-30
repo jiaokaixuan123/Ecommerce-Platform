@@ -1,0 +1,26 @@
+mode: set
+github.com/ecommerce-platform/internal/seckill/handler/routes.go:10.75,15.2 3 0
+github.com/ecommerce-platform/internal/seckill/handler/routes.go:15.2,18.3 2 0
+github.com/ecommerce-platform/internal/seckill/handler/routes.go:21.2,22.2 2 0
+github.com/ecommerce-platform/internal/seckill/handler/routes.go:22.2,25.3 2 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:17.68,19.2 1 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:23.52,25.16 2 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:25.16,28.3 2 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:30.2,35.77 2 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:35.77,38.3 2 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:40.2,40.76 1 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:45.60,47.16 2 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:47.16,50.3 2 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:52.2,53.16 2 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:53.16,56.3 2 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:58.2,58.25 1 1
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:63.63,65.47 2 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:65.47,68.3 2 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:70.2,71.16 2 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:71.16,74.3 2 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:76.2,76.25 1 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:81.55,83.16 2 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:83.16,86.3 2 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:88.2,88.85 1 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:88.85,91.3 2 0
+github.com/ecommerce-platform/internal/seckill/handler/seckill_handler.go:93.2,93.55 1 0
